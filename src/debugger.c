@@ -30,8 +30,13 @@ void start_dbg(debugger* dbg)
 		hsearch(handles[i], ENTER);	
 	
 
-
-	trace_target(dbg);
+	dbg->target_pid = fork();
+	
+	if (!dbg->target_pid) {
+		ptrace(PTRACE_TRACEME, NULL, NULL, NULL);
+		execl(dbg->target_name, dbg->target_name, NULL);
+	} else 
+		trace_target(dbg);
 }
 
 
@@ -46,8 +51,15 @@ void trace_target(debugger* dbg)
 	char* in;
 	dbg->run = 1;
 	while(dbg->run) {
+
 		in = linenoise("debugger> ");
 		input(&in, dbg);
+		
+		waitpid(dbg->target_pid, &dbg->target_status, 0);
+
+		if (WSTOPSIG(dbg->target_status) == SIGTRAP) {
+			LOG("Sigtrap send!");
+		}
 		
 		linenoiseHistoryAdd(in);
 		linenoiseFree(in);
@@ -60,7 +72,6 @@ void continue_exec(debugger* dbg)
 {
 
 	ptrace(PTRACE_CONT, dbg->target_pid, NULL, NULL);
-	fflush(stdin);
 }
 
 
