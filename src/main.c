@@ -29,18 +29,12 @@ int main(int argc, char** argv)
 		return 1;
 	}	
 	
-	// Split process (fork)
 	
-	pid_t child_pid = fork();
+		
+	debugger dbg;
+	dbg.target_name = target_name;
 	
-	debugger dbg = {child_pid, target_name, 0};
-
-	if (!child_pid) {
-		ptrace(PTRACE_TRACEME, NULL, NULL, NULL);
-		execl(target_name, target_name, NULL);
-	}	else {
-		start_dbg(&dbg);
-	}
+	start_dbg(&dbg);	
 
 	return 0;
 }

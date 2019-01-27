@@ -31,13 +31,11 @@
 
 typedef struct dbg {	
 	pid_t target_pid;
-	const char* target_name;
-	
+	const char* target_name;	
 	uint32_t target_status;
 	
 	uint8_t run : 1;	
-
-	char** args;
+	uint8_t target_runing: 1;
 
 } debugger;
 
