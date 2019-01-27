@@ -22,10 +22,11 @@ int main(int argc, char** argv)
 		return 1;
 	}*/
 
-	const char* target_name = argc > 2 ? argv[1] : "/usr/bin/ls";
+	const char* target_name = argc > 1 ? argv[1] : "/usr/bin/ls";
 		
 	if (!file_exists(target_name))  {
 		FATAL("Cant find executable!");
+		return 1;
 	}	
 	
 	// Split process (fork)
@@ -34,10 +35,10 @@ int main(int argc, char** argv)
 	
 	debugger dbg = {child_pid, target_name, 0};
 
-	if (child_pid == 0) {
-		ptrace(PTRACE_TRACEME, 0, NULL, NULL);
+	if (!child_pid) {
+		ptrace(PTRACE_TRACEME, NULL, NULL, NULL);
 		execl(target_name, target_name, NULL);
-	}	else{
+	}	else {
 		start_dbg(&dbg);
 	}
 

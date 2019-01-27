@@ -2,6 +2,8 @@
 
 
 #include <stdio.h>
+#include <string.h>
+#include <stdint.h>
 
 // Hash search table
 #include <search.h>
@@ -14,26 +16,36 @@
 // Vendor lib
 #include <linenoise/linenoise.h>
 
-#include <string.h>
+
+
+#include "macros.h"
+#include "convert.h"
+
+
+//struct reg {
+//	uint64 rbp;
+//	uint64 rdi;
+//
+//};
+
 
 typedef struct dbg {	
 	pid_t target_pid;
 	const char* target_name;
 	
-	int target_status;
+	uint32_t target_status;
 	
-	int run;
-	
+	uint8_t run : 1;	
+
+	char** args;
+
 } debugger;
 
 
-
 void start_dbg(debugger*);
+void free_dbg(debugger* );
+
 void trace_target(debugger*);
 void continue_exec(debugger*);
+void add_breakpoint(debugger*);
 void input(char**, debugger*);
-
-
-
-
-
