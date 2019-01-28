@@ -29,7 +29,8 @@
 //};
 
 
-typedef struct dbg {	
+typedef struct dbg {
+	
 	pid_t target_pid;
 	const char* target_name;	
 	uint32_t target_status;

@@ -29,7 +29,7 @@ void start_dbg(debugger* dbg)
 	for (i = 0; i < entries_size; i++) 
 		hsearch(handles[i], ENTER);	
 	
-
+	dbg->target_runing = 0;
 	dbg->target_pid = fork();
 	
 	if (!dbg->target_pid) {
@@ -50,19 +50,24 @@ void trace_target(debugger* dbg)
 {	
 	char* in;
 	dbg->run = 1;
+	uint8_t signal;
 	while(dbg->run) {
+		if (!dbg->target_runing) {
+			in = linenoise("debugger> ");
+			input(&in, dbg);
 
-		in = linenoise("debugger> ");
-		input(&in, dbg);
-		
-		waitpid(dbg->target_pid, &dbg->target_status, 0);
-
-		if (WSTOPSIG(dbg->target_status) == SIGTRAP) {
-			LOG("Sigtrap send!");
+			linenoiseHistoryAdd(in);
+			linenoiseFree(in);
+		} else {	
+			signal = WSTOPSIG(dbg->target_status);	
+			if (signal != SIGTRAP) 
+				waitpid(dbg->target_pid, &dbg->target_status, 0);			
+			else {
+				LOG("Breakpoint reached!");
+				dbg->target_runing = 0;
+			} 
 		}
-		
-		linenoiseHistoryAdd(in);
-		linenoiseFree(in);
+					
 	}	
 
 }
@@ -71,6 +76,7 @@ void trace_target(debugger* dbg)
 void continue_exec(debugger* dbg)
 {
 
+	dbg->target_runing = 1;
 	ptrace(PTRACE_CONT, dbg->target_pid, NULL, NULL);
 }
 
@@ -84,11 +90,24 @@ void add_breakpoint(debugger* dbg)
 	}
 	
 	uint32_t b_address = str_to_hex(b_address_char);
+	if (!b_address) {
+		INFO_WARN("Invalid address!");
+		return ;
+	}
+
 	uint32_t b_opcode = 0xcc; // int 3
 
 	uint32_t code_at_addr = ptrace(PTRACE_PEEKDATA, dbg->target_pid, b_address, NULL);
 	
+	ENTRY breakpoint = {b_address_char, (void*) code_at_addr};
 	// Add int 3 opcode on the bottom byte
+	
+	if (hsearch(breakpoint, FIND) != NULL) {
+		INFO_WARN("This address already has a breakpoint!");
+		return ;
+	}
+	hsearch(breakpoint, ENTER);
+	
 	uint32_t break_code = (code_at_addr & ~0xff) | b_opcode;
 	// Place new code on the address
 	ptrace(PTRACE_POKEDATA, dbg->target_pid, b_address, break_code);		
