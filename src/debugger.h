@@ -20,7 +20,7 @@
 
 #include "macros.h"
 #include "convert.h"
-
+#include "breakpoint.h"
 
 //struct reg {
 //	uint64 rbp;
@@ -37,7 +37,8 @@ typedef struct dbg {
 	
 	uint8_t run : 1;	
 	uint8_t target_runing: 1;
-
+	
+	uint8_t reach_breakpoint: 1;
 } debugger;
 
 
@@ -46,5 +47,5 @@ void free_dbg(debugger* );
 
 void trace_target(debugger*);
 void continue_exec(debugger*);
-void add_breakpoint(debugger*);
+void enable_breakpoint(debugger*);
 void input(char**, debugger*);

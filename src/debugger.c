@@ -2,6 +2,8 @@
 
 
 
+// Create a table only for breakpoints address
+
 void start_dbg(debugger* dbg) 
 {
 	
@@ -13,23 +15,26 @@ void start_dbg(debugger* dbg)
 		{"c", &continue_exec},
 		{"exit", &free_dbg},
 		{"quit", &free_dbg},
+		{"q", &free_dbg},
 
 		// Program control
-		{"break", &add_breakpoint},
-		{"b", &add_breakpoint},
+		{"break", &enable_breakpoint},
+		{"b", &enable_breakpoint},
 		{"breakpoint", &add_breakpoint}
 
 	};
 	
-	uint entries_size = sizeof(handles)/sizeof(ENTRY);
+	uint32_t entries_size = sizeof(handles)/sizeof(ENTRY);
+	uint32_t breakpoints_limit = 100;
 
-	hcreate(entries_size);
+	hcreate(entries_size + breakpoints_limit);
 	ssize_t i;
 		
 	for (i = 0; i < entries_size; i++) 
 		hsearch(handles[i], ENTER);	
 	
 	dbg->target_runing = 0;
+	dbg->reach_breakpoint = 0;
 	dbg->target_pid = fork();
 	
 	if (!dbg->target_pid) {
@@ -54,9 +59,11 @@ void trace_target(debugger* dbg)
 	while(dbg->run) {
 		if (!dbg->target_runing) {
 			in = linenoise("debugger> ");
+			
+			linenoiseHistoryAdd(in);
 			input(&in, dbg);
 
-			linenoiseHistoryAdd(in);
+
 			linenoiseFree(in);
 		} else {	
 			signal = WSTOPSIG(dbg->target_status);	
@@ -65,6 +72,7 @@ void trace_target(debugger* dbg)
 			else {
 				LOG("Breakpoint reached!");
 				dbg->target_runing = 0;
+				dbg->reach_breakpoint = 1;
 			} 
 		}
 					
@@ -75,13 +83,26 @@ void trace_target(debugger* dbg)
 
 void continue_exec(debugger* dbg)
 {
+	
+	if (dbg->reach_breakpoint)
+	{
+		char* key = "0x401112";
+		ENTRY search_break = {key};
+		ENTRY* break_table = hsearch(search_break, FIND);
+		
+		if (break_table != NULL)	
+			remove_breakpoint(dbg->target_pid, /*break_table->key*/0x401112, (uint32_t) break_table->data);	
+		else
+			printf("Cant find key: %s\n", key);
 
+		dbg->reach_breakpoint = 0;
+	}
 	dbg->target_runing = 1;
 	ptrace(PTRACE_CONT, dbg->target_pid, NULL, NULL);
 }
 
 
-void add_breakpoint(debugger* dbg) 
+void enable_breakpoint(debugger* dbg) 
 {
 	char* b_address_char = strtok(NULL, " ");
 	if (!b_address_char) {
@@ -95,24 +116,20 @@ void add_breakpoint(debugger* dbg)
 		return ;
 	}
 
-	uint32_t b_opcode = 0xcc; // int 3
-
-	uint32_t code_at_addr = ptrace(PTRACE_PEEKDATA, dbg->target_pid, b_address, NULL);
-	
-	ENTRY breakpoint = {b_address_char, (void*) code_at_addr};
-	// Add int 3 opcode on the bottom byte
-	
+	ENTRY breakpoint = {b_address_char};
 	if (hsearch(breakpoint, FIND) != NULL) {
 		INFO_WARN("This address already has a breakpoint!");
+		printf("With code: 0x%x\n", (uint32_t) hsearch(breakpoint,FIND)->data);
 		return ;
 	}
+	
+	uint32_t code_at_addr = add_breakpoint(dbg->target_pid, b_address);
+	
+	breakpoint.data = (void*) code_at_addr;
 	hsearch(breakpoint, ENTER);
 	
-	uint32_t break_code = (code_at_addr & ~0xff) | b_opcode;
-	// Place new code on the address
-	ptrace(PTRACE_POKEDATA, dbg->target_pid, b_address, break_code);		
-	
 	fprintf(stdout, "Breakpoint on 0x%x\n", b_address);	
+
 }
 
 

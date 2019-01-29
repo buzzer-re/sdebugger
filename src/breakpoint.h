@@ -1,22 +1,13 @@
 #pragma once
 
 #include <search.h>
-
-struct breakpoint {
-
-	uint32_t** addr_code; // addr_code[address][code]
-	
-};
+#include <sys/types.h>
+#include <sys/ptrace.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 
 
-void add_breakpoint(uint32_t addr, pid_t pid, breakpoint* bp);
+uint32_t add_breakpoint(pid_t pid, uint32_t addr);
+void remove_breakpoint(pid_t pid, uint32_t addr, uint32_t old_code);
 
-
-
-void add_breakpoint()
-{
-	ptrace(PTRACE_PEEKDATA, pid, addr, NULL);
-	
-	bp.
-}
