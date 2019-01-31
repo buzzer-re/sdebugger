@@ -87,13 +87,23 @@ void continue_exec(debugger* dbg)
 	{
 		ENTRY search_break = {"0x401112"};
 		ENTRY* break_table = hsearch(search_break, FIND);
+		
+		uint32_t code_at = ptrace(PTRACE_PEEKDATA, dbg->target_pid, 0x401112, NULL);
+		printf("Code at: 0x%x\n", code_at);
+		if (break_table != NULL) {
+			ptrace(PTRACE_GETREGS, dbg->target_pid, NULL, &dbg->regs);
+			dbg->regs.rip -= 2;
+			ptrace(PTRACE_SETREGS, dbg->target_pid, NULL, &dbg->regs);
+
+			remove_breakpoint(dbg->target_pid, dbg->regs.rip, (uint32_t) break_table->data);	
 			
-		if (break_table != NULL) {	
-			remove_breakpoint(dbg->target_pid, /*break_table->key*/0x401112, (uint32_t) break_table->data);	
-			LOG("Breakpoint removed!, now decrease your program counter and walk another step for load the old code in memory!\n");
+			fprintf(stdout, "RIP => 0x%x\n", dbg->regs.rip);
+			ptrace(PTRACE_SINGLESTEP, dbg->target_pid, NULL, NULL);
+			waitpid(dbg->target_pid, &dbg->target_status, 0);
 		}
 		dbg->reach_breakpoint = 0;
 	}
+	LOG("Continuing exec!");
 	dbg->target_runing = 1;
 	ptrace(PTRACE_CONT, dbg->target_pid, NULL, NULL);
 }

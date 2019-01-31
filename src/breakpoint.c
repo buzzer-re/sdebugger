@@ -16,6 +16,6 @@ uint32_t add_breakpoint(pid_t pid, uint32_t addr)
 
 void remove_breakpoint(pid_t pid, uint32_t addr, uint32_t old_code)
 {
+	printf("Puting 0x%x back to 0x%x\n", old_code, addr)
 	ptrace(PTRACE_POKEDATA, pid, addr, old_code);	
-
 }

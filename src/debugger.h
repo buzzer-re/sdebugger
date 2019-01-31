@@ -12,7 +12,7 @@
 #include <sys/types.h>
 #include <sys/ptrace.h>
 #include <sys/wait.h>
-
+#include <sys/user.h>
 // Vendor lib
 #include <linenoise/linenoise.h>
 
@@ -32,6 +32,7 @@
 typedef struct dbg {
 	
 	pid_t target_pid;
+	struct user_regs_struct regs;
 	const char* target_name;	
 	uint32_t target_status;
 	
