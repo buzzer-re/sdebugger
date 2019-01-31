@@ -1,7 +1,5 @@
 #include "debugger.h"
 
-
-
 // Create a table only for breakpoints address
 
 void start_dbg(debugger* dbg) 
@@ -26,7 +24,8 @@ void start_dbg(debugger* dbg)
 	
 	uint32_t entries_size = sizeof(handles)/sizeof(ENTRY);
 	uint32_t breakpoints_limit = 100;
-
+	
+	printf("Total itens: %d\n",entries_size + breakpoints_limit);
 	hcreate(entries_size + breakpoints_limit);
 	ssize_t i;
 		
@@ -86,15 +85,13 @@ void continue_exec(debugger* dbg)
 	
 	if (dbg->reach_breakpoint)
 	{
-		char* key = "0x401112";
-		ENTRY search_break = {key};
+		ENTRY search_break = {"0x401112"};
 		ENTRY* break_table = hsearch(search_break, FIND);
-		
-		if (break_table != NULL)	
+			
+		if (break_table != NULL) {	
 			remove_breakpoint(dbg->target_pid, /*break_table->key*/0x401112, (uint32_t) break_table->data);	
-		else
-			printf("Cant find key: %s\n", key);
-
+			LOG("Breakpoint removed!, now decrease your program counter and walk another step for load the old code in memory!\n");
+		}
 		dbg->reach_breakpoint = 0;
 	}
 	dbg->target_runing = 1;
@@ -105,18 +102,22 @@ void continue_exec(debugger* dbg)
 void enable_breakpoint(debugger* dbg) 
 {
 	char* b_address_char = strtok(NULL, " ");
+	//const char b_address_char_cp[strlen(b_address_char)];
+	//strcpy(b_address_char_cp, b_address_char);
+	char* b_address_char_cp = "0x401112";
+
 	if (!b_address_char) {
 		INFO_WARN("No address supplied!");
 		return ;
 	}
-	
-	uint32_t b_address = str_to_hex(b_address_char);
+		
+	uint32_t b_address = str_to_hex(b_address_char_cp);
 	if (!b_address) {
 		INFO_WARN("Invalid address!");
 		return ;
 	}
-
-	ENTRY breakpoint = {b_address_char};
+	
+	ENTRY breakpoint = {b_address_char_cp};
 	if (hsearch(breakpoint, FIND) != NULL) {
 		INFO_WARN("This address already has a breakpoint!");
 		printf("With code: 0x%x\n", (uint32_t) hsearch(breakpoint,FIND)->data);

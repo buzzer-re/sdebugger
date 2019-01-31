@@ -39,6 +39,7 @@ typedef struct dbg {
 	uint8_t target_runing: 1;
 	
 	uint8_t reach_breakpoint: 1;
+	char* break_address;
 } debugger;
 
 
