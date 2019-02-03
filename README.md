@@ -27,6 +27,29 @@ debugger> s // Make a single step (step,s)
 debugger> cont // continue where its stopped or start process (c, cont, continue)
 ```
 
+
+#### Example
+
+```
+$ objdump -DM intel ../examples/hello | grep '<main>'                                                                                                                                       
+289:0000000000401122 <main>:
+$./sdebugger ../examples/hello                                                                                                                                                             debugger> r
+Child pid started at 28536
+debugger> b 0x401122
+Breakpoint on 0x401122
+debugger> c
+Breakpoint reached!
+debugger> dumpr
+[Registers dump]
+debugger> s
+Step to 0x401125
+debugger> s
+Step to 0x40112c
+debugger> c
+Hello world
+Child 28536 exited!
+debugger> 
+```
 #### TODO
 
 
