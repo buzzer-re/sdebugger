@@ -55,8 +55,6 @@ debugger>
 
  | List  | Description|
 | ------------- | -------------|
-| Multiple Breakpoint | Capability for create multiple breakpoint |
-| Show registers  |  Capability to show registers when debugging |
 | Modify registers | Capability to modify a register value |
 | Dissasembly | Capability to disassembly a function or a range of address |
 | Patch | Capability to patch some opcode on the binary |
