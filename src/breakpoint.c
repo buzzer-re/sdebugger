@@ -15,6 +15,6 @@ uint64_t add_breakpoint(pid_t pid, uint64_t addr)
 
 void remove_breakpoint(pid_t pid, uint64_t addr, uint64_t old_code)
 {
-	uint64_t code_at = ptrace(PTRACE_PEEKDATA, pid, addr, NULL);
-	ptrace(PTRACE_POKEDATA, pid, addr, code_at);	
+//	uint64_t code_at = ptrace(PTRACE_PEEKDATA, pid, addr, NULL);
+	ptrace(PTRACE_POKEDATA, pid, addr, old_code);	
 }
