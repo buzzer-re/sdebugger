@@ -16,7 +16,7 @@ make
 
 ### Using
 
-For now still veeery simple, you can send your own binary to it and continue or add breakpoint. that's it for now :D 
+For now still veeery simple.
 
 ```
 ./main <binary>
