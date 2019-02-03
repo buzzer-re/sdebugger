@@ -17,12 +17,12 @@ int file_exists(const char* filename);
 int main(int argc, char** argv) 
 {
 
-	/*if ( argc < 2 ) {
+	if ( argc < 2 ) {
 		fprintf(stderr, "Usage: %s <debug_target>\n", argv[0]);
 		return 1;
-	}*/
+	}
 
-	const char* target_name = argc > 1 ? argv[1] : "/usr/bin/ls";
+	const char* target_name = argv[1];
 		
 	if (!file_exists(target_name))  {
 		FATAL("Cant find executable!");

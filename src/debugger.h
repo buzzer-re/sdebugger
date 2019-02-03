@@ -21,6 +21,7 @@
 #include "macros.h"
 #include "convert.h"
 #include "breakpoint.h"
+#include "register.h"
 
 //struct reg {
 //	uint64 rbp;
@@ -34,11 +35,11 @@ typedef struct dbg {
 	pid_t target_pid;
 	struct user_regs_struct regs;
 	const char* target_name;	
-	uint64_t target_status;
+	int target_status;
 	
 	uint8_t run : 1;	
 	uint8_t target_runing: 1;
-	
+	uint8_t target_started: 1;	
 	uint8_t reach_breakpoint: 1;
 	char* break_address;
 } debugger;
@@ -47,7 +48,14 @@ typedef struct dbg {
 void start_dbg(debugger*);
 void free_dbg(debugger* );
 
+void start_target(debugger*);
 void trace_target(debugger*);
 void continue_exec(debugger*);
+void single_step(debugger*);
 void enable_breakpoint(debugger*);
 void input(char**, debugger*);
+
+
+// Features
+
+void dump_registers_wr(debugger* dbg);

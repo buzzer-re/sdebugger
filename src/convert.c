@@ -8,8 +8,11 @@ uint64_t str_to_hex(const char* str)
 }
 
 
-uint64_t hex_to_str(uint64_t hex)
+char* hex_to_str(uint64_t hex)
 {
-	return 10;
+	char* hex_str = malloc(sizeof(char)*10); //("0xFFFFFFFF"));
+	sprintf(hex_str, "0x%x", hex);
+
+	return hex_str;
 }
 
