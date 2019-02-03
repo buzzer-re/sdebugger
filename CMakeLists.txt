@@ -9,8 +9,9 @@ add_library(linenoise vendor/linenoise/linenoise.c)
 add_library(debugger src/debugger.c)
 add_library(converter src/convert.c)
 add_library(breakpoint src/breakpoint.c)
-target_link_libraries(debugger converter breakpoint)
+add_library(register src/register.c)
 
+target_link_libraries(debugger converter breakpoint register)
 
 add_executable(sdebugger src/main.c)
 target_link_libraries(sdebugger debugger linenoise)
