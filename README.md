@@ -1,5 +1,5 @@
 # sdebugger
-A simple debugger for Linux on development
+A simple x64 debugger for Linux on development
 
 
 
