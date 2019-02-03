@@ -20,8 +20,11 @@ For now still veeery simple, you can send your own binary to it and continue or 
 
 ```
 ./main <binary>
-debugger> b <addr> //break or breakpoint
-debugger> cont // continue or c
+debugger> r // Spawn child process (run)
+debugger> b <addr> // Add a breakpoint to a given addr (break, breakpoint, b)
+debugger> dumpr // Dump registers, put a breakpoint before
+debugger> s // Make a single step (step,s)
+debugger> cont // continue where its stopped or start process (c, cont, continue)
 ```
 
 #### TODO
