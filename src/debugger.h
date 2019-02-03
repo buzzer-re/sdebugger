@@ -34,7 +34,7 @@ typedef struct dbg {
 	pid_t target_pid;
 	struct user_regs_struct regs;
 	const char* target_name;	
-	uint32_t target_status;
+	uint64_t target_status;
 	
 	uint8_t run : 1;	
 	uint8_t target_runing: 1;
