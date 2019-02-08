@@ -10,8 +10,10 @@ add_library(debugger src/debugger.c)
 add_library(converter src/convert.c)
 add_library(breakpoint src/breakpoint.c)
 add_library(register src/register.c)
+add_library(proclib src/proclib.c)
 
-target_link_libraries(debugger converter breakpoint register)
+
+target_link_libraries(debugger converter breakpoint register proclib)
 
 add_executable(sdebugger src/main.c)
 target_link_libraries(sdebugger debugger linenoise)

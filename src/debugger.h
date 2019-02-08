@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 // Hash search table
+#define __USE_GNU
 #include <search.h>
 
 // Sys lib
@@ -22,12 +23,12 @@
 #include "convert.h"
 #include "breakpoint.h"
 #include "register.h"
+#include "proclib.h"
 
-//struct reg {
-//	uint64 rbp;
-//	uint64 rdi;
-//
-//};
+
+#define TARGET_STARTED 1 
+#define TARGET_STOPED 0
+
 
 
 typedef struct dbg {
@@ -42,7 +43,18 @@ typedef struct dbg {
 	uint8_t target_started: 1;	
 	uint8_t reach_breakpoint: 1;
 	char* break_address;
+	
+	struct trap_st trap;
+
 } debugger;
+
+
+struct hsearch_data dispatch_table;
+struct hsearch_data breakpoint_table;
+
+
+uint64_t breakpoint_limits;
+
 
 
 void start_dbg(debugger*);
