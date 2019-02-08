@@ -6,7 +6,7 @@
 #include <sys/ptrace.h>
 #include <sys/wait.h>
 #include <unistd.h>
-
+#include <signal.h>
 
 #include "debugger.h"
 #include "macros.h"
@@ -29,11 +29,12 @@ int main(int argc, char** argv)
 		return 1;
 	}	
 	
-	
+
 		
 	debugger dbg;
 	dbg.target_name = target_name;
 	
+
 	start_dbg(&dbg);	
 
 	return 0;
@@ -44,3 +45,4 @@ int file_exists(const char* filename)
 {
 	return access(filename, F_OK) != -1;
 }
+

@@ -2,9 +2,9 @@
 
 // Create a table only for breakpoints address
 
-void start_dbg(debugger* dbg) 
+void start_dbg(debugger* dbg)
 {
-	
+
 
 	ENTRY handles[] = {
 		// Flow control
@@ -27,28 +27,32 @@ void start_dbg(debugger* dbg)
 		{"dumpr", &dump_registers_wr},
 
 	};
-	
+
 	uint64_t entries_size = sizeof(handles)/sizeof(ENTRY);
-	uint64_t breakpoints_limit = 100;
-	
-	hcreate(entries_size + breakpoints_limit);
+	breakpoint_limits = 100;
+	hcreate_r(entries_size, &dispatch_table);
+	hcreate_r(breakpoint_limits, &breakpoint_table);
 	ssize_t i;
-		
-	for (i = 0; i < entries_size; i++) 
-		hsearch(handles[i], ENTER);	
 	
+	ENTRY* tmp; // Why do that if i just wanna enter the value?...
+	for (i = 0; i < entries_size; i++)
+		hsearch_r(handles[i], ENTER, &tmp, &dispatch_table);
+
 	dbg->target_runing = 0;
 	dbg->reach_breakpoint = 0;
-	
-	trace_target(dbg);	
+	dbg->target_started = 0;
+
+	start_target(dbg);
+	trace_target(dbg);
 }
 
 
 void free_dbg(debugger* dbg)
 {
-	hdestroy();
+	hdestroy_r(&dispatch_table);
+	hdestroy_r(&breakpoint_table);
 	dbg->run = 0;
-	if (dbg->target_started) { 
+	if (dbg->target_started) {
 		kill(dbg->target_pid, SIGKILL);
 		printf("Killed child with pid: %d\nExiting...\n", dbg->target_pid);
 	}
@@ -58,141 +62,140 @@ void free_dbg(debugger* dbg)
 
 void start_target(debugger* dbg)
 {
+	
 	if (dbg->target_started) {
-		INFO_WARN("Target already beeing debugged!");
-		return ;
-	}
+		char in;
+		printf("Child already started in %d, wanna restart? [y/N]: ", dbg->target_pid);
+		in = getchar();
+		CLEAN_STDIN();
+		if (in != 'y' && in != 'Y') return ;	
+		kill(dbg->target_pid, SIGKILL);
+	}	
+
 	dbg->target_pid = fork();
 	if (!dbg->target_pid) {
 		ptrace(PTRACE_TRACEME, NULL, NULL, NULL);
 		execl(dbg->target_name, dbg->target_name, NULL);
 	} else {
-		dbg->target_started = 1;
-		printf("Child pid started at %d\n", dbg->target_pid);
+		dbg->target_started = TARGET_STARTED;
+		printf("Child pid ready at %d\n", dbg->target_pid);
 	}
 }
 
-void trace_target(debugger* dbg) 
-{	
+void trace_target(debugger* dbg)
+{
 	char* in;
 	dbg->run = 1;
 	uint8_t signal;
 	while(dbg->run) {
 		if (!dbg->target_runing) {
 			in = linenoise("debugger> ");
-			
 			linenoiseHistoryAdd(in);
 			input(&in, dbg);
 
 
 			linenoiseFree(in);
-		} 
+		}
 		else if (WIFEXITED(dbg->target_status)) {
 			dbg->target_started = 0;
-			dbg->target_runing = 0;
+			dbg->target_runing = 0;	
+			hdestroy_r(&breakpoint_table);
+			hcreate_r(breakpoint_limits, &breakpoint_table);		
 			printf("Child %d exited!\n", dbg->target_pid);
-
 		}
-		else {	
-			signal = WSTOPSIG(dbg->target_status);	
-
-			if (signal != SIGTRAP)  {
-				ptrace(PTRACE_GETREGS, dbg->target_pid, NULL, &dbg->regs);
-				uint64_t code = ptrace(PTRACE_PEEKDATA, dbg->target_pid, --dbg->regs.rip, NULL);
-				printf("%s Code: 0x%x RIP=> 0x%x\n", strsignal(signal), code,dbg->regs.rip);
-
-				waitpid(dbg->target_pid, &dbg->target_status, 0);			
+		else {
+			signal = WSTOPSIG(dbg->target_status);
+		
+			switch(signal) {
+				case SIGSEGV:
+					dbg->trap.trap_addr = get_pc(dbg->target_pid);
+					dbg->trap.data_trap = peek_data(dbg->target_pid, dbg->trap.trap_addr);
+					fprintf(stderr, "%s Dump: 0x%x IP: 0x%x\n", strsignal(signal), dbg->trap.data_trap, dbg->trap.trap_addr - 1);
+					break;
+				case SIGTRAP:
+					dbg->trap.trap_addr = get_pc(dbg->target_pid) - 1;
+					dbg->trap.data_trap = peek_data(dbg->target_pid, dbg->trap.trap_addr);
+					fprintf(stdout, "Breakpoint reached at 0x%x\n", dbg->trap.trap_addr);
+					dbg->target_runing = TARGET_STOPED;	
+					break;
 			}
-			else {
-				LOG("Breakpoint reached!");
-				dbg->target_runing = 0;
-				dbg->reach_breakpoint = 1;
-			} 
 		}
-					
-	}	
+
+	}
 
 }
 
 
 void continue_exec(debugger* dbg)
 {
-	
-	if (!dbg->target_started) {
-		INFO_WARN("Target are not runing!");
-		return ;
-	}
+
+	ASSERT_TARGET_RUNING(dbg->target_started);
+
 	if (dbg->reach_breakpoint)
 	{
-		
-		ptrace(PTRACE_GETREGS, dbg->target_pid, NULL, &dbg->regs);
-		dbg->regs.rip--;
-		char* rip_addr = hex_to_str(dbg->regs.rip);
-		ENTRY search_break = {rip_addr};
-		ENTRY* break_table = hsearch(search_break, FIND);
-		free(rip_addr);
 			
-		if (break_table != NULL) {	
-			remove_breakpoint(dbg->target_pid, dbg->regs.rip, (uint64_t) break_table->data);	
-			ptrace(PTRACE_SETREGS, dbg->target_pid, NULL, &dbg->regs);
-			ptrace(PTRACE_SINGLESTEP, dbg->target_pid, NULL, NULL);
-			waitpid(dbg->target_pid, &dbg->target_status, 0);
-			add_breakpoint(dbg->target_pid, dbg->regs.rip);	
-		
+		char* rip_addr = hex_to_str(dbg->trap.trap_addr);
+		ENTRY search_break = {rip_addr};
+		ENTRY* break_table; 
+		hsearch_r(search_break, FIND, &break_table, &breakpoint_table);
+		free(rip_addr);
+
+		if (break_table != NULL) {
+			step_over_breakpoint(dbg->target_pid, &dbg->trap);
 			LOG("Continuing exec!");
 		}
 		dbg->reach_breakpoint = 0;
 	}
+
 	dbg->target_runing = 1;
-	ptrace(PTRACE_CONT, dbg->target_pid, NULL, NULL);
+
+	continue_proc(dbg->target_pid, NOWAIT);
+
 	waitpid(dbg->target_pid, &dbg->target_status, 0);
 }
 
 
 void single_step(debugger* dbg)
 {
-	if (!dbg->target_started) {
-		INFO_WARN("Target are not runing!");
-		return ;
-	}
+	ASSERT_TARGET_RUNING(dbg->target_started);
+
 	ptrace(PTRACE_SINGLESTEP, dbg->target_pid, NULL, NULL);
 	waitpid(dbg->target_pid, &dbg->target_status, 0);
 	uint64_t ip = get_pc(dbg->target_pid) - 1;
 	printf("Step to 0x%x\n", ip);
 }
 
-void enable_breakpoint(debugger* dbg) 
+void enable_breakpoint(debugger* dbg)
 {
-
-	if (!dbg->target_started) {
-		INFO_WARN("Target are not runing!(loaded) run 'r' first!");
-		return ;
-	}
+	ASSERT_TARGET_RUNING(dbg->target_started);
 	char* b_address_char = strtok(NULL, " ");
 
 	if (!b_address_char) {
 		INFO_WARN("No address supplied!");
 		return ;
 	}
-		
+
 	uint64_t b_address = str_to_hex(b_address_char);
 	if (!b_address) {
 		INFO_WARN("Invalid address!");
 		return ;
 	}
-	
+
 	ENTRY breakpoint = {b_address_char};
-	if (hsearch(breakpoint, FIND) != NULL) {
+	ENTRY* h_table_res;
+	hsearch_r(breakpoint, FIND, &h_table_res, &breakpoint_table);
+
+	if (h_table_res != NULL) {
 		INFO_WARN("This address already has a breakpoint!");
-		printf("With code: 0x%x\n", (uint64_t) hsearch(breakpoint,FIND)->data);
+		printf("With code: 0x%x\n", (uint64_t) h_table_res->data);
 		return ;
 	}
-	
+
 	breakpoint.data = (void*) add_breakpoint(dbg->target_pid, b_address);
 
-	hsearch(breakpoint, ENTER);
-	
-	fprintf(stdout, "Breakpoint on 0x%x\n", b_address);	
+	hsearch_r(breakpoint, ENTER, &h_table_res, &breakpoint_table);
+
+	fprintf(stdout, "Breakpoint on 0x%x\n", b_address);
 
 }
 
@@ -205,15 +208,18 @@ void enable_breakpoint(debugger* dbg)
 //
 // If no handlers are found (invalid command), a error message appears and nothing happens
 //
-void input(char** input, debugger* dbg) 
+void input(char** input, debugger* dbg)
 {
-	
+
 	char* handler_name = strtok(*input, " ");
 	ENTRY handle = {handler_name};
-	
-	if (hsearch(handle, FIND) != NULL)	
-		( ( void(*) (void *) ) hsearch(handle, FIND)->data) (dbg);
-	
+	ENTRY* res;
+
+	hsearch_r(handle, FIND, &res, &dispatch_table);
+
+	if (res != NULL)
+		( ( void(*) (void *) ) res->data) (dbg);
+
 	else
 		INFO_WARN("Invalid command!");
 		//system(handler_name);
