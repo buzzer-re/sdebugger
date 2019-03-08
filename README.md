@@ -19,7 +19,7 @@ make
 For now still veeery simple.
 
 ```
-./main <binary>
+./sdebugger <binary>
 debugger> r // Spawn child process (run)
 debugger> b <addr> // Add a breakpoint to a given addr (break, breakpoint, b)
 debugger> dumpr // Dump registers, put a breakpoint before
