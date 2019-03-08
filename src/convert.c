@@ -10,9 +10,14 @@ uint64_t str_to_hex(const char* str)
 
 char* hex_to_str(uint64_t hex)
 {
-	char* hex_str = malloc(sizeof(char)*10); //("0xFFFFFFFF"));
+	int hex_str_size = 11;
+	char* hex_str = calloc(hex_str_size, sizeof(char)); //("0xFFFFFFFF"));
 	sprintf(hex_str, "0x%x", hex);
+	
 
+	#ifdef DEBUG
+	STR_BYTES(hex_str);
+	#endif
 	return hex_str;
 }
 

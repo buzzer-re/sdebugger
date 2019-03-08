@@ -1,6 +1,6 @@
 #pragma once
 
-#include <search.h>
+
 #include <sys/types.h>
 #include <sys/ptrace.h>
 #include <stdint.h>
@@ -9,7 +9,7 @@
 
 
 #include "proclib.h"
-
+#include "register.h"
 
 struct trap_st {
 	uint64_t trap_addr;

@@ -23,8 +23,8 @@ void init_reg_table();
 void destroy_registers();
 
 void dump_registers(pid_t pid);
-
-void dump_register(pid_t pid, char* reg);
+uint64_t* dump_register(pid_t pid, char* reg);
 
 uint64_t get_pc(pid_t pid);
+uint64_t set_reg(pid_t pid, char* reg, uint64_t value);
 
