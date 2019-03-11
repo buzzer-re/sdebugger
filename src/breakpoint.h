@@ -14,6 +14,7 @@
 struct trap_st {
 	uint64_t trap_addr;
 	uint64_t data_trap;
+	uint64_t old_code; 
 };
 
 

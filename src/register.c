@@ -67,8 +67,9 @@ uint64_t get_pc(pid_t pid)
 uint64_t set_reg(pid_t pid, char* reg, uint64_t value)
 {
 	uint64_t* reg_value = dump_register(pid, reg);
-	printf("I was just called!\n");
+
 	if (reg_value != NULL) {
+
 		*reg_value = value;
 		ptrace(PTRACE_SETREGS, pid, NULL, &regs);
 		return value;

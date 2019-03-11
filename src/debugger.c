@@ -109,10 +109,11 @@ void trace_target(debugger* dbg)
 		}
 		else {
 			signal = WSTOPSIG(dbg->target_status);
-			
+				
 			dbg->trap.trap_addr = get_pc(dbg->target_pid) - 1;
 			dbg->trap.data_trap = read_mem(dbg->target_pid, dbg->trap.trap_addr);	
-
+			
+	
 			switch(signal) {
 				case SIGSEGV:
 					fprintf(stderr, "%s Dump: 0x%x IP: 0x%x\n", strsignal(signal), dbg->trap.data_trap, dbg->trap.trap_addr - 1);
@@ -144,10 +145,9 @@ void continue_exec(debugger* dbg)
 		#ifdef DEBUG	
 		STR_BYTES(rip_addr);	
 		#endif
-		printf("Searching %s on table...\n", rip_addr);
-		
-
+			
 		if (break_table != NULL) {
+			dbg->trap.old_code = (uint64_t) break_table->data;
 			step_over_breakpoint(dbg->target_pid, &dbg->trap);
 			LOG("Continuing exec!");
 		}
@@ -185,23 +185,22 @@ void enable_breakpoint(debugger* dbg)
 	}
 
 
-/// AAAAAHHHH GNU HASHTABLE WHY DO YOU GET THE ADDRESS OF THE KEY INSTEAD THE CALCULATED HASH!!!
-/// AHHHHHHHHHH	
-	ssize_t addr_size = strlen(b_address_char);
-	char* b_address_char_cp = calloc(sizeof(char), addr_size);
-	memcpy(b_address_char_cp, b_address_char, addr_size);
-
-/// ^ THIS HAS A MEMORY LEAK BTW		
-// TODO Write a really good hashtable from scratch
-
-
-
 	uint64_t b_address = str_to_hex(b_address_char);
 
 	if (!b_address) {
 		INFO_WARN("Invalid address!");
 		return ;
 	}
+
+	/// AAAAAHHHH GNU HASHTABLE WHY DO YOU GET THE ADDRESS OF THE KEY INSTEAD THE CALCULATED HASH!!!
+	/// AHHHHHHHHHH	
+	ssize_t addr_size = strlen(b_address_char);
+	char* b_address_char_cp = calloc(sizeof(char), addr_size);
+	memcpy(b_address_char_cp, b_address_char, addr_size);
+
+	/// ^ THIS HAS A MEMORY LEAK BTW		
+	// TODO Write a really good hashtable from scratch
+
 
 	ENTRY breakpoint = {b_address_char_cp};
 	ENTRY* h_table_res;
@@ -224,7 +223,6 @@ void enable_breakpoint(debugger* dbg)
 	
 	fprintf(stdout, "Breakpoint on %s\n", breakpoint.key);
 
-	fprintf(stdout, "Key: %s\nValue: 0x%x\n", h_table_res->key, h_table_res->data);
 
 }
 

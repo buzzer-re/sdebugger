@@ -41,8 +41,7 @@ void remove_breakpoint(pid_t pid, uint64_t addr, uint64_t old_code)
 void step_over_breakpoint(pid_t pid, struct trap_st* trap)
 {
 	set_reg(pid, "rip", trap->trap_addr);
-	printf("Setting register!\n");
-	remove_breakpoint(pid, trap->trap_addr, trap->data_trap);
+	remove_breakpoint(pid, trap->trap_addr, trap->old_code);
 	single_step_proc(pid, WAIT);
 	add_breakpoint(pid, trap->trap_addr);
 }
