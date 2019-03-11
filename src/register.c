@@ -1,27 +1,39 @@
 #include "register.h"
 
 
+
+void init_reg_table()
+{
+
+	ENTRY registers_entries[] = {
+		{"rip", &regs.rip},
+		{"rax", &regs.rax},
+		{"rsi", &regs.rsi},
+		{"rdx", &regs.rdx},
+		{"rsi", &regs.rsi},
+		{"rcx", &regs.rcx},
+		{"rbp", &regs.rbp},
+		{"rdi", &regs.rdi},
+		{"cs", &regs.cs},
+		{"eflags", &regs.eflags},
+		{"r15", &regs.r15},
+		{"r14", &regs.r14},
+		{"r12", &regs.r12},
+		{"r11", &regs.r11}
+	};
+	ssize_t i;
+	uint64_t reg_table_size = sizeof(registers_entries)/sizeof(ENTRY);
+	
+	ENTRY* tmp;
+	hcreate_r(reg_table_size, &registers_mapped);
+	for(i = 0; i < reg_table_size; ++i) {
+		hsearch_r(registers_entries[i], ENTER, &tmp, &registers_mapped);
+	}
+}
+
+
 void dump_registers(pid_t pid) 
 {
-//44-  __extension__ unsigned long long int r15;
-//45-  __extension__ unsigned long long int r14;
-//46-  __extension__ unsigned long long int r13;
-//47-  __extension__ unsigned long long int r12;
-//48-  __extension__ unsigned long long int rbp;
-//49-  __extension__ unsigned long long int rbx;
-//50-  __extension__ unsigned long long int r11;
-//51-  __extension__ unsigned long long int r10;
-//52-  __extension__ unsigned long long int r9;
-//53-  __extension__ unsigned long long int r8;
-//54-  __extension__ unsigned long long int rax;
-//55-  __extension__ unsigned long long int rcx;
-//56-  __extension__ unsigned long long int rdx;
-//57-  __extension__ unsigned long long int rsi;
-//58-  __extension__ unsigned long long int rdi;
-//59-  __extension__ unsigned long long int orig_rax;
-//60-  __extension__ unsigned long long int rip;
-//61-  __extension__ unsigned long long int cs;
-//62-  __extension__ unsigned long long int eflags;
 	
 	
 	ptrace(PTRACE_GETREGS, pid, NULL, &regs);
@@ -49,4 +61,35 @@ uint64_t get_pc(pid_t pid)
 	ptrace(PTRACE_GETREGS, pid, NULL, &regs);
 
 	return (uint64_t) regs.rip;
+}
+
+
+uint64_t set_reg(pid_t pid, char* reg, uint64_t value)
+{
+	uint64_t* reg_value = dump_register(pid, reg);
+
+	if (reg_value != NULL) {
+
+		*reg_value = value;
+		ptrace(PTRACE_SETREGS, pid, NULL, &regs);
+		return value;
+	}	
+	return value;
+}
+
+uint64_t* dump_register(pid_t pid, char* reg)
+{
+	ptrace(PTRACE_GETREGS, pid, NULL, &regs);
+	ENTRY search_reg = {reg, NULL};
+	ENTRY* res;
+	hsearch_r(search_reg, FIND, &res, &registers_mapped);	
+	
+	
+	return res != NULL ?   (uint64_t*) res->data : 0;
+}
+
+
+void destroy_registers() 
+{
+	hdestroy_r(&registers_mapped);
 }

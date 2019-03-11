@@ -2,6 +2,7 @@
 #include "macros.h"
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 
 char* hex_to_str(uint64_t hex);
